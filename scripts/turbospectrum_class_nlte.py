@@ -261,6 +261,7 @@ class TurboSpectrum(SyntheticSpectrumGenerator):
             self.turbulent_velocity = microturbulence
 
             # interpolate and find a model atmosphere for the microturbulence
+            print('self turbulent velocity',self.turbulent_velocity)
             self.marcs_model_name = "marcs_tef{:.1f}_g{:.2f}_z{:.2f}_tur{:.2f}".format(self.t_eff, self.log_g,
                                                                                        self.metallicity,
                                                                                        self.turbulent_velocity)
@@ -356,7 +357,7 @@ class TurboSpectrum(SyntheticSpectrumGenerator):
             stdout = None
             stderr = subprocess.STDOUT
         else:
-            stdout = open('/dev/null', 'w')
+            stdout = open('interpolate_atmos.txt', 'w') #open('/dev/null', 'w')
             stderr = subprocess.STDOUT
 
         output = os_path.join(self.tmp_dir, marcs_model_name)
@@ -364,7 +365,7 @@ class TurboSpectrum(SyntheticSpectrumGenerator):
 
         if self.nlte_flag:
             for element in self.model_atom_file:
-                element_abundance = self._get_element_abundance(element)
+                element_abundance = self._get_element_abundance(element)   
                 # Write configuration input for interpolator
                 interpol_config = ""
                 for line in marcs_model_list:
@@ -550,7 +551,7 @@ class TurboSpectrum(SyntheticSpectrumGenerator):
             for element, abundance in self.free_abundances.items():
                 item_abund[element] = float(solar_abundances[element]) + round(float(abundance), 6)
         for i in range(1, len(periodic_table)):
-            individual_abundances += "{:d}  {:.6f}\n".format(i, item_abund[periodic_table[i]])
+            individual_abundances += "{:d}  {:.2f}\n".format(i, item_abund[periodic_table[i]])
 
         # Allow for user input isotopes as a dictionary (similar to abundances)
 
@@ -617,6 +618,7 @@ class TurboSpectrum(SyntheticSpectrumGenerator):
            pure_lte=pure_lte_boolean_code,
            xifix=xifix_boolean_code
            )
+        print('gooort',xifix_boolean_code,self.turbulent_velocity)
         # Build bsyn configuration file
         bsyn_config = """\
 'PURE-LTE  :'  '{pure_lte}'
@@ -643,6 +645,8 @@ class TurboSpectrum(SyntheticSpectrumGenerator):
   300.00
   15
   1.30
+'XIFIX:' '{xifix}'
+{this[turbulent_velocity]:.2f}
 """.format(this=self.__dict__,
            segment_file_string=segment_file_string,
            alpha=alpha,
@@ -651,7 +655,8 @@ class TurboSpectrum(SyntheticSpectrumGenerator):
            individual_isotopes=individual_isotopes.strip(),
            line_lists=line_lists.strip(),
            pure_lte=pure_lte_boolean_code,
-           nlte=nlte_boolean_code
+           nlte=nlte_boolean_code,
+           xifix=xifix_boolean_code
            )
 
         # print(babsma_config)
@@ -699,7 +704,8 @@ class TurboSpectrum(SyntheticSpectrumGenerator):
             stdout = None
             stderr = subprocess.STDOUT
         else:
-            stdout = open('/dev/null', 'w')
+            stdout = open(f'ts_output_bsyn.txt','w')# open('/dev/null', 'w')#open(f'ts_output_{np.random.rand(1)[0]}.txt','w')#open('/dev/null', 'w')
+            stdout2= open('ts_output_babsma.txt', 'w')
             stderr = subprocess.STDOUT
 
         if run_babsma_flag:
@@ -712,7 +718,7 @@ class TurboSpectrum(SyntheticSpectrumGenerator):
             # Run babsma. This creates an opacity file .opac from the MARCS atmospheric model
             try:  # chdir is NECESSARY, turbospectrum cannot run from other directories sadly
                 os.chdir(turbospec_root)
-                pr1, stderr_bytes = self.run_babsma(babsma_in, stderr, stdout)
+                pr1, stderr_bytes = self.run_babsma(babsma_in, stderr, stdout2)
             except subprocess.CalledProcessError:
                 output["errors"] = "babsma failed with CalledProcessError"
                 return output
@@ -733,6 +739,7 @@ class TurboSpectrum(SyntheticSpectrumGenerator):
             # Run bsyn. This synthesizes the spectrum
             try:
                 os.chdir(turbospec_root)
+                print("running bsyn")
                 pr, stderr_bytes = self.run_bsyn(bsyn_in, stderr, stdout)
             except subprocess.CalledProcessError:
                 output["errors"] = "bsyn failed with CalledProcessError"

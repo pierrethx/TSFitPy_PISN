@@ -96,19 +96,29 @@ def create_segment_file(segment_size: float, line_begins_list: np.ndarray[float]
     start: float = line_begins_list[0] - segment_size
     end: float = line_ends_list[0] + segment_size
 
+    links=[]   
+ 
+    print('linez',line_begins_list, line_ends_list)
+    ll=0
     for (line_left, line_right) in zip(line_begins_list, line_ends_list):
+
         if line_left > end + segment_size:
             segments_left.append(start)
             segments_right.append(end)
+            ll+=1
+            links.append(ll)
             start = line_left - segment_size
             end = line_right + segment_size
         else:
             end = line_right + segment_size
+            links.append(ll)
 
     segments_left.append(start)
     segments_right.append(end)
+    print('segmentz',segments_left,segments_right)
+    print('links',links)
 
-    return np.asarray(segments_left), np.asarray(segments_right)
+    return np.asarray(segments_left), np.asarray(segments_right),np.asarray(links)
 
 
 def closest_available_value(target: float, options: list[float]) -> float:

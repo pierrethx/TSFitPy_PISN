@@ -1,2 +1,6 @@
-#name_of_spectrum_to_fit     rv      teff  logg  [Fe/H]  Input_vmicroturb Input_vmacroturb
-UVES_Sun-1_cleaned_norm.txt 0.000000  5771  4.44  0.03
+#name_of_spectrum_to_fit     rv      teff  logg  [Fe/H]  Input_vmicroturb
+j1010_normalized_spectrum2.txt 0.000000 5700 4.68 -2.5 1.45
+j1010_normalized_spectrum2_0.txt 0.000000 5900 4.68 -2.5 1.45
+j1010_normalized_spectrum2_1.txt 0.000000 5700 4.88 -2.5 1.45
+j1010_normalized_spectrum2_2.txt 0.000000 5700 4.68 -2.3 1.45
+j1010_normalized_spectrum2_3.txt 0.000000 5700 4.68 -2.5 1.65

@@ -448,6 +448,9 @@ class TSFitPyConfig:
         self.pretrim_linelist = True
         self.lightweight_ts_run = False
 
+        self.logeps=False
+        self.links=None
+
     def load_config(self, check_valid_path=True):
         # if last 3 characters are .cfg then new config file, otherwise old config file
         if self.config_location[-4:] == ".cfg":
@@ -832,6 +835,12 @@ class TSFitPyConfig:
             self.nx = 10
             self.ny = 10
             self.nz = 230
+
+        try:
+            self.logeps = bool(self.config_parser["AdvancedOptions"]["logeps"])
+            print("wookwook")
+        except:
+            pass
 
         # advanced options
         try:

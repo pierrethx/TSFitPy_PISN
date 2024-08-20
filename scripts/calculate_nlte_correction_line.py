@@ -102,7 +102,8 @@ def cut_linelist(seg_begins: list[float], seg_ends: list[float], old_path_name: 
                     # check that ANY wavelengths are within the range at all
                     if not (wavelength_maximum_element < segment_min_wavelength or wavelength_minimum_element > segment_max_wavelength):
                         for seg_index, (seg_begin, seg_end) in enumerate(
-                                zip(segment_to_use_begins, segment_to_use_ends)):  # wavelength lines write here
+                                zip(segment_to_use_begins, segment_to_use_ends)):  # wavelength lines write here 
+
                             index_seg_start, element_wavelength_dictionary = binary_search_lower_bound(
                                 lines_file[line_number_read_file:number_of_lines_element + line_number_read_file],
                                 element_wavelength_dictionary, 0, number_of_lines_element - 1, seg_begin)
@@ -362,7 +363,7 @@ def run_nlte_corrections(config_file_name, output_folder_title, abundance=0):
         abusingclasses.line_ends_sorted = np.array([line_ends])
         abusingclasses.line_centers_sorted = np.array([line_centers])
 
-    abusingclasses.seg_begins, abusingclasses.seg_ends = create_segment_file(5, abusingclasses.line_begins_sorted, abusingclasses.line_ends_sorted)
+    abusingclasses.seg_begins, abusingclasses.seg_ends,abusingclasses.links = create_segment_file(5, abusingclasses.line_begins_sorted, abusingclasses.line_ends_sorted)
 
     # check inputs
 

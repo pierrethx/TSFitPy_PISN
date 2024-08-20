@@ -10,7 +10,7 @@ from scipy.optimize import minimize, root_scalar
 from .auxiliary_functions import create_dir, calculate_vturb, calculate_equivalent_width, \
     apply_doppler_correction, create_segment_file, import_module_from_path, combine_linelists
 from .model_atom_class import ModelAtom
-from .solar_abundances import periodic_table
+from .solar_abundances import periodic_table,solar_abundances
 from .turbospectrum_class_nlte import TurboSpectrum
 from .m3dis_class import M3disCall
 from .synthetic_code_class import SyntheticSpectrumGenerator
@@ -391,6 +391,9 @@ class Spectra:
         self.m3dis_nx: int = 0
         self.m3dis_ny: int = 0
         self.m3dis_nz: int = 0
+
+        self.logeps: bool = tsfitpy_config.logeps
+        self.links = tsfitpy_config.links
 
         self.xatol_all: float = 0
         self.fatol_all: float = 0
@@ -1197,8 +1200,10 @@ class Spectra:
                 with open(os.path.join(self.output_folder, f"result_spectrum_{self.spec_name}.spec"), 'a') as g:
                     indices_argsorted = np.argsort(result_one_line['fit_wavelength'])
                     np.savetxt(g, np.column_stack((result_one_line['fit_wavelength'][indices_argsorted], result_one_line['fit_flux_norm'][indices_argsorted], result_one_line['fit_flux'][indices_argsorted])), fmt=('%.5f', '%.5f', '%.10f'))
+            print(self.line_begins_sorted,self.line_ends_sorted)
             line_left, line_right = self.line_begins_sorted[line_number], self.line_ends_sorted[line_number]
-            segment_left, segment_right = self.seg_begins[line_number], self.seg_ends[line_number]
+            print( self.seg_begins,self.seg_ends)
+            segment_left, segment_right = self.seg_begins[self.links[line_number]], self.seg_ends[self.links[line_number]]
 
             wavelength_fit_array = result_one_line['fit_wavelength']
             norm_flux_fit_array = result_one_line['fit_flux_norm']
@@ -1847,6 +1852,10 @@ class Spectra:
         # Add elemental abundances to the dictionary
         for key in elem_abund_dict:
             result_dict[key] = elem_abund_dict[key]
+            if self.logeps: # toggle for logeps output
+                if key!="Fe":
+                    result_dict[key]+=elem_abund_dict["Fe"]
+                result_dict[key]+=solar_abundances[key]
 
         result_dict["Microturb"] = vmic
         result_dict["Macroturb"] = vmac
@@ -2964,7 +2973,7 @@ def launch_tsfitpy_with_config(tsfitpy_configuration: TSFitPyConfig, output_fold
         tsfitpy_configuration.line_ends_sorted = np.array([line_ends])
         tsfitpy_configuration.line_centers_sorted = np.array([line_centers])
 
-    tsfitpy_configuration.seg_begins, tsfitpy_configuration.seg_ends = create_segment_file(tsfitpy_configuration.segment_size, tsfitpy_configuration.line_begins_sorted, tsfitpy_configuration.line_ends_sorted)
+    tsfitpy_configuration.seg_begins, tsfitpy_configuration.seg_ends,tsfitpy_configuration.links = create_segment_file(tsfitpy_configuration.segment_size, tsfitpy_configuration.line_begins_sorted, tsfitpy_configuration.line_ends_sorted)
     # save segment in a separate file where each line is an index of the seg_begins and seg_ends
     np.savetxt(tsfitpy_configuration.segment_file, np.column_stack((tsfitpy_configuration.seg_begins, tsfitpy_configuration.seg_ends)), fmt="%d")
 
@@ -3114,11 +3123,13 @@ def launch_tsfitpy_with_config(tsfitpy_configuration: TSFitPyConfig, output_fold
 
     # go through all columns. if the element is in the periodic table, replace it with element_Fe
     for column in df_results.columns:
-        if column in periodic_table:
+        if column in periodic_table and not tsfitpy_configuration.logeps:
             if column == 'Fe':
                 df_results.rename(columns={column: f"{column}_H"}, inplace=True)
             else:
                 df_results.rename(columns={column: f"{column}_Fe"}, inplace=True)
+        if tsfitpy_configuration.logeps and column in periodic_table:
+            df_results.rename(columns={column: f"{column}_logeps"}, inplace=True)
 
     # save results to csv without index and with tab delimiter
     if tsfitpy_configuration.save_results:
